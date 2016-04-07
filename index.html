@@ -1,0 +1,112 @@
+﻿<!doctype html>
+<html ng-app="myApp">
+<head>
+    <title>Parse Expression Example</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.2/angular.js"></script>
+</head>
+<body ng-app="myApp">
+
+    <div ng-controller="MyController">
+        <input ng-model="exprs"
+               type="text"
+               placeholder="Enter an expression" />
+        <div>{{ parsedExpr }}</div>
+    </div>
+
+    <div ng-controller="MyController1">
+        <input ng-model="to"
+               type="email"
+               placeholder="Recipient" />
+        <textarea ng-model="emailBody"></textarea>
+        <pre>{{ previewText }}</pre>
+    </div>
+
+
+    <div id="emailEditor" ng-controller="MyController2">
+        <input ng-model="to"
+               type="email"
+               placeholder="Recipient" />
+        <textarea ng-model="emailBody"></textarea>
+
+        <div id="emailPreview">
+            <pre>__ previewText __</pre>
+        </div>
+    </div>
+
+
+</body>
+
+<script>
+    //解析表达式
+    angular.module('myApp', [])
+     .controller('MyController',
+     ['$scope', '$parse', function ($scope, $parse) {
+
+         $scope.person = {
+             name: "Ari Lerner"
+         };
+
+         $scope.$watch('exprs', function (newVal, oldVal, scope) {
+             if (newVal !== oldVal) {
+                  //Let's set up our parseFun with the expression
+                 var parseFun = $parse(newVal);
+                 // Get the value of the parsed expression, set it on the scope for output
+                 scope.parsedExpr = parseFun(scope);
+             }
+         });
+     }])//叉值字符串
+     .controller('MyController1',
+        function ($scope, $interpolate) {
+            $scope.to = 'ari@fullstack.io';
+            $scope.emailBody = 'Hello {{ to }},\n\nMy name is Ari too!';
+            // Set up a watch
+            $scope.$watch('emailBody', function (body) {
+                if (body) {
+                    var template = $interpolate(body);
+                    $scope.previewText =
+                      template({ to: $scope.to });
+                }
+            });
+        })
+        .controller('MyController2',
+        ['$scope', 'EmailParser',
+          function ($scope, EmailParser) {
+              $scope.to = 'ari@fullstack.io';
+              $scope.emailBody = 'Hello __to__';
+              // Set up a watch
+              $scope.$watch('emailBody', function (body) {
+                  if (body) {
+                      $scope.previewText =
+                        EmailParser.parse(body, {
+                            to: $scope.to
+                        });
+                  }
+              });
+          }]);
+
+
+
+        angular.module('emailParser', [])
+        .config(['$interpolateProvider',
+        function ($interpolateProvider) {
+            $interpolateProvider.startSymbol('__');
+            $interpolateProvider.endSymbol('__');
+        }])
+        .factory('EmailParser', ['$interpolate',
+            function ($interpolate) {
+                // a service to handle parsing
+                return {
+                    parse: function (text, context) {
+                        var template = $interpolate(text);
+                        return template(context);
+                    }
+                };
+            }]);
+
+
+
+
+    
+     
+</script>
+</html>
